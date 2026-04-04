@@ -1,85 +1,93 @@
+import csv_parser as csp
 import pandas as pd
-import numpy as np
-import os
 from prophet import Prophet
+from google import genai
+global model 
 
-def get_training_data():
-    # 1. Stabilirea căilor către fișiere
-    base_path = os.path.dirname(__file__) 
-    path_admisie = os.path.abspath(os.path.join(base_path, '..', 'data', 'admission_data.csv'))
-    path_meteo = os.path.abspath(os.path.join(base_path, '..', 'data', 'meteo.csv'))
-    
-    print("⏳ Se încarcă fișierele...")
+def train():
+    data = csp.merge_data()
 
-    # 2. PROCESARE DATE SPITAL (Admission Data)
-    df_raw = pd.read_csv(path_admisie)
-    
-    # Rezolvăm problema formatului mixt: 2017 (M/D/Y) vs 2018-2019 (D/M/Y)
-    # Mai întâi transformăm brut ca să putem detecta anul
-    temp_dates = pd.to_datetime(df_raw['D.O.A'], format='mixed', dayfirst=True)
+    print(data.dtypes)
 
-    # Grupăm pacienții pe zi (numărăm rândurile pentru fiecare 'ds')
-    df_daily = df_raw.groupby('ds').size().reset_index(name='y')
+    data = data.rename(columns={'datetime': 'ds', 'patient_count': 'y'})
 
-    # 3. PROCESARE DATE METEO
-    df_meteo = pd.read_csv(path_meteo)
-    df_meteo['ds'] = pd.to_datetime(df_meteo['datetime'])
-    
-    # Selectăm doar data și temperatura medie (coloana 'temp' din meteo.csv)
-    df_meteo = df_meteo[['ds', 'temp']].rename(columns={'temp': 'Temperatura'})
+    model = Prophet(growth='flat')
 
-    # 4. ÎMBINARE (MERGE)
-    # "Lipim" temperatura de datele spitalului folosind coloana comună 'ds'
-    df_final = pd.merge(df_daily, df_meteo, on='ds', how='left')
+    model.add_regressor('temp')
+    model.add_regressor('humidity')
+    model.add_regressor('precip')
+    model.add_regressor('snow')
+    model.add_regressor('windspeed')
 
-    # 5. CURĂȚARE FINALĂ ȘI SORTARE
-    df_final = df_final.sort_values('ds')
-    
-    # Umplem eventualele goluri de temperatură (Forward Fill)
-    df_final['Temperatura'] = df_final['Temperatura'].ffill()
-    
-    # Dacă tot mai avem NaN (ex: prima zi nu are meteo), punem o medie generală
-    df_final['Temperatura'] = df_final['Temperatura'].fillna(df_final['Temperatura'].mean())
+    model.fit(data)
 
-    print(f"✅ Procesare completă. Avem {len(df_final)} zile de antrenament.")
-    return df_final
+    date_viitor = pd.DataFrame({
+        'ds': ['2026-05-10'],    
+        'temp': [22.5], 
+        'humidity': [50.0],
+        'precip': [0.0],
+        'snow': [0.0],
+        'windspeed': [15.2],
+        'preciptype_rain': [0.0], 
+        'preciptype_snow': [0.0]
+        })
 
-def antreneaza_si_prezice(df_train, temp_viitor):
+    date_viitor['ds'] = pd.to_datetime(date_viitor['ds'])
+
+    predictie = model.predict(date_viitor)
+
+    medie = data['y'].mean()
+
+    valoare_prezisa = predictie['yhat'].iloc[0]
+
+    diferenta_procentuala = ((valoare_prezisa - medie) / medie) * 100
+
+    data_tinta = date_viitor['ds'].iloc[0].date()
+    vreme_temp = date_viitor['temp'].iloc[0]
+    vreme_precip = date_viitor['precip'].iloc[0]
+    vreme_vant = date_viitor['windspeed'].iloc[0]
+
+    # Datele de la Prophet
+    pacienti_estimati = int(valoare_prezisa)
+    pacienti_medie = int(medie)
+    procent = round(diferenta_procentuala, 1)
+
+    param_list = [data_tinta, vreme_temp, vreme_precip, vreme_vant, pacienti_estimati, pacienti_medie, procent]
+
+    return param_list
+
+def llm_setup():
+    param_list = train()
+
+    prompt_pentru_llm = f"""
+    Ești un asistent medical și manager de spital cu experiență.
+    Sarcina ta este să interpretezi următoarele date și să oferi un scurt raport de pregătire pentru personalul de la primiri urgențe.
+
+    DATELE PENTRU ZIUA DE {param_list[0]}:
+    - Variație față de medie: {param_list[6]}% 
+
+    CONDIȚII METEO PROGNOZATE:
+    - Temperatură: {param_list[1]}°C
+    - Precipitații: {param_list[2]} mm
+    - Viteza vântului: {param_list[3]} km/h
+
+    CERINȚE:
+    1. Scrie un rezumat de 2-3 propoziții care să explice cum va fi ziua (ex: aglomerată, normală, lejeră).
+    2. Cum crezi că va influența vremea tipul de afecțiuni cu care vor veni pacienții?
+    3. Dă 2 recomandări practice pentru personal (ex: suplimentarea personalului, pregătirea anumitor echipamente).
     """
-    Antrenează Prophet și face o predicție bazată pe o temperatură dată.
-    """
-    # Configurare model
-    model = Prophet(yearly_seasonality=True, daily_seasonality=False)
-    model.add_regressor('Temperatura')
-    
-    # Antrenare
-    model.fit(df_train)
-    
-    # Creăm un rând pentru "mâine" (sau o dată viitoare)
-    future_date = df_train['ds'].max() + pd.Timedelta(days=1)
-    future_df = pd.DataFrame({'ds': [future_date], 'Temperatura': [temp_viitor]})
-    
-    # Predicție
-    forecast = model.predict(future_df)
-    
-    return forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
 
-# ==========================================
-# TESTARE FLUX COMPLET
-# ==========================================
+    key = 'AIzaSyA2wWs0_hVQWeYC8mLNCFrGj-y3t1L9fAo'
+
+    # Aici îți pui cheia ta secretă de API
+    client = genai.Client(api_key='AIzaSyA2wWs0_hVQWeYC8mLNCFrGj-y3t1L9fAo')
+
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt_pentru_llm
+    )
+
+    print(response.text)
+
 if __name__ == "__main__":
-    try:
-        # Pasul 1: Obținem datele curate
-        date_pregatite = get_training_data()
-        print("\n📊 Primele 5 rânduri din setul de date combinat:")
-        print(date_pregatite.head())
-
-        # Pasul 2: Facem o predicție de test pentru o zi cu 0 grade (iarnă)
-        print("\n🔮 Calculăm predicția pentru o zi de iarnă (0°C)...")
-        predictie = antreneaza_si_prezice(date_pregatite, 0)
-        
-        numar_prezis = round(predictie['yhat'].values[0], 2)
-        print(f"✅ Rezultat: Se estimează un număr de {numar_prezis} pacienți.")
-
-    except Exception as e:
-        print(f"❌ A apărut o eroare: {e}")
+    llm_setup()
