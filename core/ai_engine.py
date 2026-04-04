@@ -16,16 +16,14 @@ import json
 from data.keys import Keys
 from api_parser import parse_api
 
-global model 
-
 def prediction (date, medie):
     valoare_prezisa = date['yhat'].iloc[0]
 
     diferenta_procentuala = ((valoare_prezisa - medie) / medie) * 100
 
-    data_tinta = date['ds'].iloc[0].date(),
-    vreme_temp = date['temp'].iloc[0],
-    vreme_precip = date['precip'].iloc[0],
+    data_tinta = date['ds'].iloc[0].date()
+    vreme_temp = date['temp'].iloc[0]
+    vreme_precip = date['precip'].iloc[0]
     vreme_vant = date['windspeed'].iloc[0]
    
     extra_data = [data_tinta, vreme_temp, vreme_precip, vreme_vant]
@@ -33,6 +31,7 @@ def prediction (date, medie):
     return [diferenta_procentuala, extra_data]
 
 def train():
+    global model
     base_path = os.path.dirname(__file__)
     cale_model = os.path.join(base_path, 'prophet_model.json')
 
@@ -62,6 +61,10 @@ def train():
             json.dump(model_to_json(model), f)
         print("Modelul a fost antrenat si salvat cu succes!")
 
+    medie = data['y'].mean()
+
+    return medie
+
     # date_viitor = pd.DataFrame({
     #     'ds': ['2026-05-10'],    
     #     'temp': [22.5], 
@@ -75,7 +78,8 @@ def train():
 
     # date_viitor['ds'] = pd.to_datetime(date_viitor['ds'])
 
-    date_viitor = parse_api(45.6427, 25.5887, "2026-04-01", "2026-04-01")
+def process_coords(lat, long, start, end, medie):
+    date_viitor = parse_api(lat, long, start, end)
 
     predictie_centru = model.predict(date_viitor[0])
 
@@ -86,8 +90,6 @@ def train():
     predictie_est = model.predict(date_viitor[3])
 
     predictie_vest = model.predict(date_viitor[4])
-
-    medie = data['y'].mean()
 
     predictions = [
         prediction (predictie_centru, medie),
@@ -114,14 +116,14 @@ def train():
     extra_data.append(procent)
     param_list = extra_data
 
-    print (param_list)
-
     return param_list
 
 
 
 def llm_setup():
-    param_list = train()
+    medie = train()
+
+    param_list = process_coords(45.6427, 25.5887, "2026-04-01", "2026-04-01", medie)
 
     prompt_pentru_llm = f"""
     Ești un asistent medical și manager de spital cu experiență.
