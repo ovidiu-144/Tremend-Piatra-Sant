@@ -1,25 +1,51 @@
+import os
+import sys
+
+
+base_path = os.path.dirname(os.path.dirname(__file__))
+
+if base_path not in sys.path:
+    sys.path.append(base_path)
+
 import csv_parser as csp
 import pandas as pd
 from prophet import Prophet
 from google import genai
+from prophet.serialize import model_to_json, model_from_json
+import json
+from data.keys import Keys
+
 global model 
 
 def train():
-    data = csp.merge_data()
+    base_path = os.path.dirname(__file__)
+    cale_model = os.path.join(base_path, 'prophet_model.json')
 
-    print(data.dtypes)
+    if os.path.exists(cale_model):
+        print("Incarc modelul deja antrenat din fisier...")
+        with open(cale_model, 'r') as f:
+            model = model_from_json(json.load(f))
 
-    data = data.rename(columns={'datetime': 'ds', 'patient_count': 'y'})
+        data = csp.merge_data()
+        data = data.rename(columns={'datetime': 'ds', 'patient_count': 'y'})
 
-    model = Prophet(growth='flat')
+    else:
+        print("Modelul nu exista. Incep antrenarea...")
+        data = csp.merge_data()
+        data = data.rename(columns={'datetime': 'ds', 'patient_count': 'y'})
 
-    model.add_regressor('temp')
-    model.add_regressor('humidity')
-    model.add_regressor('precip')
-    model.add_regressor('snow')
-    model.add_regressor('windspeed')
+        model = Prophet(growth='flat')
+        model.add_regressor('temp')
+        model.add_regressor('humidity')
+        model.add_regressor('precip')
+        model.add_regressor('snow')
+        model.add_regressor('windspeed')
 
-    model.fit(data)
+        model.fit(data)
+
+        with open(cale_model, 'w') as f:
+            json.dump(model_to_json(model), f)
+        print("Modelul a fost antrenat si salvat cu succes!")
 
     date_viitor = pd.DataFrame({
         'ds': ['2026-05-10'],    
@@ -77,10 +103,8 @@ def llm_setup():
     3. Dă 2 recomandări practice pentru personal (ex: suplimentarea personalului, pregătirea anumitor echipamente).
     """
 
-    key = 'AIzaSyA2wWs0_hVQWeYC8mLNCFrGj-y3t1L9fAo'
-
     # Aici îți pui cheia ta secretă de API
-    client = genai.Client(api_key='AIzaSyA2wWs0_hVQWeYC8mLNCFrGj-y3t1L9fAo')
+    client = genai.Client(api_key=Keys.AI_KEY)
 
     response = client.models.generate_content(
         model='gemini-2.5-flash',
