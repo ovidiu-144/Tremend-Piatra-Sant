@@ -30,7 +30,7 @@ def parse_api(lat, long, start, end, events=None):
                 'ds': [weather.date],
                 'temp': [np.mean([weather.temperature_min, weather.temperature_max])],
                 'humidity': [weather.humidity],
-                'precip': [0.0],
+                'precip': [weather.precipitation],
                 'snow': [0.0],
                 'windspeed': [weather.wind_speed],
                 'preciptype_rain': [0.0],
@@ -45,4 +45,4 @@ def parse_api(lat, long, start, end, events=None):
     return data_list
 
 if __name__ == "__main__":
-    parse_api(45.6427, 25.5887, "2026-04-01", "2026-04-05")
+    parse_api(45.6427, 25.5887, "2026-04-01", "2026-04-01")
