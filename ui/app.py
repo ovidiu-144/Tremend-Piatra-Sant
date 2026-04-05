@@ -126,7 +126,7 @@ if st.session_state.analiza_vizibila:
             
     risc = 82 if normalize_text(oras_introdus) in ["constanta", "brasov", "bucuresti"] else 38
 
-    tab_dashboard, tab_simulator = st.tabs(["📋 Raport Analitic", "🤖 Simulator What-If"])
+    tab_simulator, = st.tabs(["🤖 Simulator What-If"])
     with tab_simulator:
         st.markdown("#### Simulator de Criză (What-If)")
         st.info("Introduceți un scenariu ipotetic pentru a vedea cum se modifică indicatorii de mai sus.")
