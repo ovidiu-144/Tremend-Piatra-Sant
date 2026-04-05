@@ -98,4 +98,3 @@ def get_area_weather(lat, lon, start_date, end_date):
 
 # print("\n--- Vreme pe zone ---\n")
 
-df_area = get_area_weather(45.6427, 25.5887, "2026-04-01", "2026-04-05")
