@@ -132,7 +132,7 @@ if spital_selectat:
     st.markdown(f"**Locație:** {oras_afisare} | **Data Raportului:** {data_selectata.strftime('%d %B %Y')}")
     st.divider()
 else:
-    st.title("👋 Bine ai venit în CareSurge AI")
+    st.title("👋 Bine ai venit în PredictaMed")
     st.markdown("""
     **Platforma de Triaj Predictiv On-Demand**
     
