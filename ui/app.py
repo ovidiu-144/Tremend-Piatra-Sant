@@ -16,7 +16,7 @@ from datetime import date, timedelta
 # Primul apel Streamlit din script (altfel: missing ScriptRunContext)
 st.set_page_config(
     page_title="CareSurge AI | Dashboard",
-    page_icon="🏥",
+    page_icon="",
     layout="wide"
 )
 
@@ -73,7 +73,7 @@ st.markdown("""
 
 # --- SIDEBAR: INPUT DATE ---
 with st.sidebar:
-    st.header("📍 Configurare Raport")
+    st.header("Configurare Raport")
     st.markdown("Selectați parametrii pentru analiza de risc.")
     st.divider()
     
@@ -128,8 +128,8 @@ if predict_btn:
 
 # --- HEADER APLICAȚIE ---
 if spital_selectat:
-    st.title(f"🏥 {spital_selectat}")
-    st.markdown(f"**📍 Locație:** {oras_afisare} | **📅 Data Raportului:** {data_selectata.strftime('%d %B %Y')}")
+    st.title(f"{spital_selectat}")
+    st.markdown(f"**Locație:** {oras_afisare} | **Data Raportului:** {data_selectata.strftime('%d %B %Y')}")
     st.divider()
 else:
     st.title("👋 Bine ai venit în CareSurge AI")
@@ -149,7 +149,7 @@ if st.session_state.analiza_vizibila:
             time.sleep(1.2) 
     risc = 82 if normalize_text(oras_introdus) in ["constanta", "brasov", "bucuresti"] else 38
 
-    tab_simulator, tab_what_if = st.tabs(["⚠️ Raport de Risc", "🔬 What-If Simulator"])
+    tab_simulator, tab_what_if = st.tabs(["Raport de Risc", "What-If Simulator"])
     with tab_simulator:
         st.markdown("#### Raport de Risc")
         st.info(st.session_state.response)
@@ -164,7 +164,7 @@ if st.session_state.analiza_vizibila:
             height=120,
             key="prompt_what_if_input"
         )
-        what_if_btn = st.button("💡 Analizează Scenariul", type="primary", disabled=not prompt_what_if.strip(), key="what_if_btn")
+        what_if_btn = st.button("Analizează Scenariul", type="primary", disabled=not prompt_what_if.strip(), key="what_if_btn")
 
         if what_if_btn and prompt_what_if.strip():
             with st.spinner("Se analizează scenariul cu modelul Prophet..."):
