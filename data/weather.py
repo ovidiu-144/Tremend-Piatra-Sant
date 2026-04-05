@@ -98,8 +98,8 @@ def get_area_weather(lat, lon, start_date, end_date):
 
 # print("\n--- Vreme pe zone ---\n")
 
-# df_area = get_area_weather(45.6427, 25.5887, "2026-04-01", "2026-04-05")
-# for area, weather_list in df_area.items():
-#     print(f"Zona: {area}")
-#     for weather in weather_list:
-#         print(weather)
+df_area = get_area_weather(45.6427, 25.5887, "2026-04-01", "2026-04-05")
+for area, weather_list in df_area.items():
+    print(f"Zona: {area}")
+    for weather in weather_list:
+        print(weather)
