@@ -145,7 +145,7 @@ if st.session_state.analiza_vizibila:
             time.sleep(1.2) 
     risc = 82 if normalize_text(oras_introdus) in ["constanta", "brasov", "bucuresti"] else 38
 
-    tab_simulator, = st.tabs(["🤖 Simulator What-If"])
+    tab_simulator, = st.tabs(["⚠️ Raport de Risc"])
     with tab_simulator:
         st.markdown("#### Simulator de Criză (What-If)")
         st.info(response)
