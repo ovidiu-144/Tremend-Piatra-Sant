@@ -1,67 +1,45 @@
+# PredictaMed — triaj predictiv geospațial (Prove It / Tremend)
 
-# 🏥 CareSurge AI (Platformă Geospațială de Triaj Predictiv și Simulare la Cerere)
-
-**Proiect dezvoltat pentru Hackathon-ul „Prove It” - Proba de 24h (Sponsor: Tremend / Publicis Sapient)**
-
----
-
-## 📌 1. Rezumatul Proiectului (Executive Summary)
-**CareSurge AI** este o platformă HealthTech centralizată, dezvoltată pentru managementul proactiv al resurselor spitalicești. Printr-o arhitectură On-Demand, platforma permite managerilor medicali să selecteze orice spital din rețea, moment în care sistemul deduce automat locația geografică, extrage datele de context local (vreme, evenimente) și combină Machine Learning-ul cu Agentic AI (LLM) pentru a genera instantaneu predicții de risc pe departamente și planuri de acțiune explicate.
+Proiect dezvoltat în cadrul hackathonului **„Prove It”** (probă 24h, sponsor **Tremend / Publicis Sapient**). Aplicația combină prognoza meteo pe coordonatele spitalului, un model **Prophet** antrenat pe date istorice de admisii și vreme, evenimente majore din apropiere și un LLM (**Google Gemini**) pentru rapoarte text și scenarii „what-if”.
 
 ---
 
-## 🎯 2. Problema Medicală & Impactul
-* **Problema:** Un spital județean de la munte (ex: Brașov) se confruntă cu cu totul alte tipare de crize (ex: avalanșe, polei extrem) față de un spital de pe litoral (ex: Constanța - insolații, festivaluri de vară). Un sistem predictiv rigid, care nu ține cont de contextul geospațial, este inutil.
-* **Soluția CareSurge AI:** Un sistem flexibil, la cerere. AI-ul înțelege contextul local al fiecărui spital și oferă medicilor puterea de a interoga datele și de a rula simulări doar atunci când au nevoie, eliminând "zgomotul" alertelor automate irelevante.
+## Rezumat
+
+**PredictaMed** este o aplicație **Streamlit** în care utilizatorul alege **orașul** și **unitatea medicală** din `data/spitale.csv` (cu latitudine/longitudine), apoi o **dată** în intervalul permis de UI (azi … +14 zile). La apăsarea **„Generează Raport de Risc”**, backend-ul:
+
+1. Citește prognoza **Open-Meteo** pentru **cinci puncte** în jurul spitalului (centru + offset ~10 km N/S/E/V) și păstrează scenariul cu **cea mai mare deviație** față de media istorică a volumului de pacienți (estimare Prophet).
+2. Interoghează **PredictHQ** pentru evenimente (festivaluri, sport, concerte) în raza configurată, relevante pentru intervalul ales.
+3. Include **sărbători legale din România** în contextul trimis către model și în antrenament (componentă holidays în Prophet).
+4. **Gemini** (`gemini-2.5-flash`, SDK `google.genai`) redactează un raport scurt pentru primiri urgențe (rezumat, influență meteo asupra tipului de cazuri, recomandări). În fila **„What-If Simulator”**, același lanț de date alimentează răspunsuri la întrebări/scenarii libere ale utilizatorului.
+
+Predicția numerică este **agregată la nivel de flux de pacienți** (date de admisie zilnice), nu pe secții/departamente individuale în cod; interpretarea în limbaj natural rămâne la LLM, pe baza acelor indicatori.
 
 ---
 
-## ✨ 3. Funcționalități Core (Arhitectură On-Demand & LLM)
+## Problemă și abordare
 
-### 1. Profilare Geospațială și Predicție la Cerere (On-Demand Routing)
-* **Cum funcționează:** Utilizatorul deschide aplicația și selectează din meniu instituția (ex: *Spitalul Clinic Județean de Urgență Cluj*). 
-* **Logica de Backend:** Sistemul deduce instantaneu regiunea de activitate (coordonatele GPS ale orașului Cluj) și trage prin API datele meteo stricte pentru acea zonă.
-* **Output LLM:** La apăsarea butonului **[Generează Raport de Risc]**, datele meteo locale și istoricul acelui spital trec prin modelul ML, iar LLM-ul oferă un raport punctual pe departamente. *(Ex: "Pentru locația Cluj, anticipăm un vârf la Toxicologie diseară din cauza unui festival major. Restul secțiilor sunt în parametri normali.")*
-
-### 2. Explicații la Cerere (AI Explainability & Deep Dive)
-* **Cum funcționează:** Sub fiecare estimare generată, utilizatorul are opțiunea de a cere justificarea deciziei. 
-* **Magia LLM:** Modelul nu oferă doar procente reci, ci „traduce” factorii matematici în limbaj uman: *"Am estimat o creștere de 45% la Ortopedie la Spitalul Sf. Spiridon Iași deoarece, conform Open-Meteo, mâine la ora 06:00 va ploua la temperaturi de -2°C (ploaie înghețată/polei), un tipar care în istoricul nostru a generat mereu suprasolicitarea acestei secții."*
-
-### 3. Simulatorul de Scenarii „What-If” (Crisis Stress-Test)
-* **Cum funcționează:** Managerul spitalului selectat poate interoga sistemul cu scenarii ipotetice de dezastru.
-* **Magia LLM + ML:** Utilizatorul scrie: *"Ce s-ar întâmpla cu resursele noastre dacă mâine ar lovi un val de caniculă de 40°C în oraș?"*. LLM-ul preia parametrii din text, forțează algoritmul ML (`Prophet`) să recalculeze predicția pentru acel spital specific și emite un plan de contingență.
+Spitalele din zone diferite (munte, litoral, urban) au tipare de cerere influențate de vreme și de evenimente locale. Soluția propusă: **rutare geospațială la cerere** (coordonate din lista de spitale + API meteo + evenimente) și **explicare** prin LLM, astfel încât managerii să primească un mesaj lizibil, nu doar un scor brut.
 
 ---
 
-## ⚙️ 4. Arhitectura Tehnică & Fluxul de Date
+## Funcționalități (implementate în repo)
 
-* **Pasul 1 (Mapare Geografică & Ingestie la Cerere):**
-  * Un dicționar/config de bază care mapează `Spital -> Coordonate GPS`.
-  * Apel dinamic către `Open-Meteo API` bazat pe locația dedusă a spitalului selectat.
-* **Pasul 2 (Procesare ML On-Demand):**
-  * Filtrarea fișierului CSV (datele istorice) pentru a potrivi spitalul și departamentul.
-  * Rularea algoritmului `Prophet` pe loc, la apăsarea butonului.
-* **Pasul 3 (AI Generativ / LLM Engine):**
-  * `OpenAI API / Gemini` structurează rezultatele matematice în planuri de acțiune și interpretează scenariile „What-If” prin extragere de entități.
-* **Pasul 4 (Interfață Streamlit):**
-  * Un UI curat, bazat pe selectoare (Dropdowns) pentru Spital/Secție, butoane de execuție ("Rublează Predicția") și zone de chat pentru simulări.
+| Zonă | Descriere |
+|------|-----------|
+| **Interfață** | Sidebar: oraș → listă spitale din CSV → dată → buton raport. Două file: raport de risc și simulator what-if. |
+| **Date geospațiale** | `data/spitale.csv` (oraș, nume spital, `lat`, `long`). Există și `data/spitale_Romania.geojson` / `hospital_maker.py` pentru lucrul cu seturi geografice. |
+| **Meteo** | `data/weather.py` — `api.open-meteo.com/v1/forecast` (zilnic: temperaturi, precipitații, zăpadă, umiditate, vânt, cod vreme). |
+| **Evenimente** | `data/events.py` — API PredictHQ, filtrare geografică și după categorie/rank. |
+| **ML** | `core/ai_engine.py` + `core/csv_parser.py`: îmbinare `admission_data.csv` / `admission_data_2.csv` cu `meteo.csv`; Prophet cu regresori meteo + `is_event_day`; model serializat în `core/prophet_model.json` (reantrenare la prima rulare dacă lipsește fișierul). |
+| **LLM** | Doar **Gemini** (nu OpenAI în codul curent). Chei în `data/keys.py` (`Keys.AI_KEY`, `Keys.EVENT_API_KEY`). |
 
 ---
 
-## 👥 5. Echipa și Distribuția Rolurilor (24h Sprint)
+## Arhitectura datelor (pe scurt)
 
-* 🛠️ **Data Engineer (Geospatial & APIs):** Creează dicționarul de mapare a spitalelor (`hospital_locations.json`). Configurează API-ul Meteo să primească dinamic latitudinea/longitudinea în funcție de spitalul selectat. Formatează datele pentru a fi trimise către ML.
-* 🧠 **AI & ML Engineer (Core Predictiv):** Conectează modelul Prophet la pipeline-ul on-demand. Scrie prompturile avansate care obligă LLM-ul să explice logic (Deep-Dive) și să extragă parametrii din textul "What-if".
-* 💻 **Frontend & Product Lead:** Asamblează dashboard-ul în `Streamlit`. Se asigură că UX-ul este impecabil (utilizatorul alege locația -> apasă buton -> primește analiza). Realizează "pitch-ul" final.
+1. **Antrenament / încărcare model:** fuziune date admisii + meteo istoric → Prophet → predicție pentru ferestrele viitoare construite în `core/api_parser.py` din prognoza Open-Meteo și evenimente.
+2. **La raport:** `process_coords` evaluează cele 5 zone, selectează predicția extremă, construiește `param_list` (dată, meteo, procent față de medie) + text evenimente/sărbători → prompt → `llm_process` / `what_if_process`.
 
 ---
 
-## 📊 6. Structura Prezentării Finale (Pitch Deck)
-
-1. **Problema:** Riscul medical variază enorm de la o regiune la alta. Nu putem trata un spital de munte la fel ca unul de câmpie.
-2. **Soluția:** CareSurge AI – Platforma geospațială la cerere. 
-3. **Demo Live (Momentul de Glorie):** * Se selectează Spitalul Județean Constanța -> AI-ul trage date meteo de pe litoral -> Arată riscurile.
-   * Se schimbă pe Spitalul Județean Brașov -> AI-ul trage date meteo de munte -> Riscurile se schimbă complet.
-   * Se face un Deep-Dive pentru a demonstra explicabilitatea și se rulează o simulare What-If scurtă.
-4. **Arhitectura Tehnică:** Prezentarea modului în care funcționează rutarea dinamică a datelor și simbioza ML + LLM.
-5. **Viziunea de Viitor:** O hartă interactivă a României unde Ministerul Sănătății poate vedea riscurile pe toate spitalele simultan.
