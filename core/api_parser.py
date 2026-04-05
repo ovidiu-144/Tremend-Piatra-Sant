@@ -12,6 +12,16 @@ import numpy as np
 from data.data_class.weatherData import *
 from data.weather import get_area_weather
 
+SNOW_KEYWORDS = ("snow",)
+RAIN_KEYWORDS = ("rain", "drizzle", "shower", "thunderstorm")
+
+def _get_precip_flags(weather_code: str):
+    """Return (preciptype_rain, preciptype_snow) binary flags based on weather_code description."""
+    code_lower = weather_code.lower()
+    is_snow = any(kw in code_lower for kw in SNOW_KEYWORDS)
+    is_rain = any(kw in code_lower for kw in RAIN_KEYWORDS)
+    return (1.0 if is_rain else 0.0, 1.0 if is_snow else 0.0)
+
 def parse_api(lat, long, start, end, events=None):
     weather_data = get_area_weather(lat, long, start, end)
 
@@ -26,15 +36,16 @@ def parse_api(lat, long, start, end, events=None):
     for area, weather_list in weather_data.items():
         for weather in weather_list:
             date_str = str(weather.date)[:10]
+            preciptype_rain, preciptype_snow = _get_precip_flags(weather.weather_code)
             data = pd.DataFrame({
                 'ds': [weather.date],
-                'temp': [np.mean([weather.temperature_min, weather.temperature_max])],
+                'temp': [weather.temperature],
                 'humidity': [weather.humidity],
                 'precip': [weather.precipitation],
-                'snow': [0.0],
+                'snow': [weather.snowfall],
                 'windspeed': [weather.wind_speed],
-                'preciptype_rain': [0.0],
-                'preciptype_snow': [0.0],
+                'preciptype_rain': [preciptype_rain],
+                'preciptype_snow': [preciptype_snow],
                 'is_event_day': [1.0 if date_str in event_dates else 0.0]
             })
 

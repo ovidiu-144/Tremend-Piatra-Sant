@@ -20,7 +20,8 @@ def get_daily_weather(lat, lon, start_date, end_date):
         "daily": [
             "temperature_2m_max", 
             "temperature_2m_min", 
-            "precipitation_sum", 
+            "precipitation_sum",
+            "snowfall_sum",
             "weathercode",
             "relative_humidity_2m_max",
             "windspeed_10m_max"         
@@ -43,6 +44,7 @@ def get_daily_weather(lat, lon, start_date, end_date):
                 temperature_min=row['temperature_2m_min'],
                 temperature_max=row['temperature_2m_max'],
                 precipitation=row['precipitation_sum'],
+                snowfall=row['snowfall_sum'],
                 humidity=row['relative_humidity_2m_max'],
                 wind_speed=row['windspeed_10m_max'],
                 weather_code=get_weather_description(row['weathercode']),
