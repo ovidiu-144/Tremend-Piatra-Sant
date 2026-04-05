@@ -1,5 +1,11 @@
 import pandas as pd
 import os
+import sys
+
+base_path = os.path.dirname(os.path.dirname(__file__))
+
+if base_path not in sys.path:
+    sys.path.append(base_path)
 
 def get_data_from_adm_1():
     base_path = os.path.dirname(__file__) 
