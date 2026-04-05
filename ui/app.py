@@ -82,9 +82,20 @@ with st.sidebar:
         if not df_filtrat.empty:
             lista_spitale = sorted(df_filtrat['nume'].unique().tolist())
             spital_selectat = st.selectbox("Unitate Medicală:", lista_spitale, on_change=reseteaza_analiza)
+            
+            # Păstrăm numele orașului pentru afișare
             oras_afisare = df_filtrat.iloc[0]['oras']
             
             if spital_selectat:
+                # --- EXTRAGEREA LATITUDINII ȘI LONGITUDINII ---
+                # Filtrăm df_filtrat pentru a găsi rândul exact al spitalului selectat
+                date_spital = df_filtrat[df_filtrat['nume'] == spital_selectat].iloc[0]
+                
+                # Salvăm coordonatele în variabile (verifică dacă în CSV coloanele se numesc 'lat' și 'long')
+                lat_curenta = date_spital['lat']
+                lon_curenta = date_spital['long']
+                
+                # Introducere dată
                 data_selectata = st.date_input(
                     "Selectează Data Analizei:",
                     value=date.today(),
