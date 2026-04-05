@@ -12,22 +12,23 @@ import time
 import unicodedata
 import streamlit as st
 from datetime import date, timedelta
+
+# Primul apel Streamlit din script (altfel: missing ScriptRunContext)
+st.set_page_config(
+    page_title="CareSurge AI | Dashboard",
+    page_icon="🏥",
+    layout="wide"
+)
+
 from core.ai_engine import llm_process, what_if_process
 
-# Inițializăm starea analizei
+# Inițializăm starea analizei (după set_page_config)
 if "analiza_vizibila" not in st.session_state:
     st.session_state.analiza_vizibila = False
 if "what_if_response" not in st.session_state:
     st.session_state.what_if_response = None
 if "response" not in st.session_state:
     st.session_state.response = None
-
-# --- CONFIGURARE PAGINĂ ---
-st.set_page_config(
-    page_title="CareSurge AI | Dashboard",
-    page_icon="🏥",
-    layout="wide"
-)
 
 # --- FUNCȚIE PENTRU ELIMINAREA DIACRITICELOR ---
 def normalize_text(text):

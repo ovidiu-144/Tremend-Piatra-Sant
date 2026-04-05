@@ -32,16 +32,18 @@ def _build_holidays_df(years):
     holidays_df['upper_window'] = 1
     return holidays_df
 
-def prediction (date, medie):
-    valoare_prezisa = date['yhat'].iloc[0]
+def prediction(forecast, medie, weather_input):
+    """forecast = output Prophet; weather_input = același DataFrame dat la predict() cu temp/precip reale."""
+    valoare_prezisa = forecast['yhat'].iloc[0]
 
     diferenta_procentuala = ((valoare_prezisa - medie) / medie) * 100
 
-    data_tinta = date['ds'].iloc[0].date()
-    vreme_temp = date['temp'].iloc[0]
-    vreme_precip = date['precip'].iloc[0]
-    vreme_vant = date['windspeed'].iloc[0]
-   
+    data_tinta = weather_input['ds'].iloc[0].date()
+    # Nu folosi forecast['temp']: în Prophet e contribuția regresorului la yhat, nu °C (de aceea apărea ~0).
+    vreme_temp = weather_input['temp'].iloc[0]
+    vreme_precip = weather_input['precip'].iloc[0]
+    vreme_vant = weather_input['windspeed'].iloc[0]
+
     extra_data = [data_tinta, vreme_temp, vreme_precip, vreme_vant]
 
     return [diferenta_procentuala, extra_data]
@@ -105,11 +107,11 @@ def process_coords(lat, long, start, end, medie):
     predictie_vest = model.predict(date_viitor[4])
 
     predictions = [
-        prediction (predictie_centru, medie),
-        prediction (predictie_nord, medie),
-        prediction (predictie_sud, medie),
-        prediction (predictie_est, medie),
-        prediction (predictie_vest, medie)
+        prediction(predictie_centru, medie, date_viitor[0]),
+        prediction(predictie_nord, medie, date_viitor[1]),
+        prediction(predictie_sud, medie, date_viitor[2]),
+        prediction(predictie_est, medie, date_viitor[3]),
+        prediction(predictie_vest, medie, date_viitor[4]),
     ]
 
     diferenta_procentuala, extra_data = predictions[0]
