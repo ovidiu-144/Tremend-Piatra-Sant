@@ -151,7 +151,7 @@ def llm_process(lat, long, date):
         contents=prompt_pentru_llm
     )
 
-    print(response.text)
+    return response.text
 
 if __name__ == "__main__":
     llm_process()

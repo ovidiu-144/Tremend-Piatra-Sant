@@ -5,6 +5,7 @@ import time
 import unicodedata
 import streamlit as st
 from datetime import date, timedelta
+from core.ai_engine import llm_process
 
 # Inițializăm memoria chat-ului și starea analizei
 if "istoric_chat" not in st.session_state:
@@ -111,6 +112,7 @@ with st.sidebar:
     predict_btn = st.button("🔍 Generează Raport de Risc", use_container_width=True, disabled=not buton_activ, type="primary")
 
 if predict_btn:
+    response = llm_process(lat_curenta, lon_curenta, data_selectata)
     st.session_state.analiza_vizibila = True
 
 # --- HEADER APLICAȚIE ---
@@ -139,7 +141,7 @@ if st.session_state.analiza_vizibila:
     tab_simulator, = st.tabs(["🤖 Simulator What-If"])
     with tab_simulator:
         st.markdown("#### Simulator de Criză (What-If)")
-        st.info(f"Analizăm riscul pentru {spital_selectat} în {oras_afisare} la data de {data_selectata}...")
+        st.info(response)
 
         
         for mesaj in st.session_state.istoric_chat:
