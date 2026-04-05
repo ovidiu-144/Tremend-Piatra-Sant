@@ -14,9 +14,7 @@ import streamlit as st
 from datetime import date, timedelta
 from core.ai_engine import llm_process, what_if_process
 
-# Inițializăm memoria chat-ului și starea analizei
-if "istoric_chat" not in st.session_state:
-    st.session_state.istoric_chat = []
+# Inițializăm starea analizei
 if "analiza_vizibila" not in st.session_state:
     st.session_state.analiza_vizibila = False
 if "what_if_response" not in st.session_state:
@@ -154,17 +152,6 @@ if st.session_state.analiza_vizibila:
     with tab_simulator:
         st.markdown("#### Raport de Risc")
         st.info(st.session_state.response)
-
-        
-        for mesaj in st.session_state.istoric_chat:
-            with st.chat_message(mesaj["rol"]):
-                st.markdown(mesaj["text"])
-                
-        scenariu = st.chat_input("Ex: Ce facem dacă avem o pană de curent generală?")
-        if scenariu:
-            st.session_state.istoric_chat.append({"rol": "user", "text": scenariu})
-            st.session_state.istoric_chat.append({"rol": "assistant", "text": f"**Analiză pentru {spital_selectat}:** Scenariul de tip '{scenariu}' ar ridica riscul UPU la 95%. Recomandăm activarea generatoarelor și a protocolului de triaj manual."})
-            st.rerun()
 
     with tab_what_if:
         st.markdown("#### Simulator What-If")
