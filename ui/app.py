@@ -12,13 +12,15 @@ import time
 import unicodedata
 import streamlit as st
 from datetime import date, timedelta
-from core.ai_engine import llm_process
+from core.ai_engine import llm_process, what_if_process
 
 # Inițializăm memoria chat-ului și starea analizei
 if "istoric_chat" not in st.session_state:
     st.session_state.istoric_chat = []
 if "analiza_vizibila" not in st.session_state:
     st.session_state.analiza_vizibila = False
+if "what_if_response" not in st.session_state:
+    st.session_state.what_if_response = None
 
 # --- CONFIGURARE PAGINĂ ---
 st.set_page_config(
@@ -121,6 +123,7 @@ with st.sidebar:
 if predict_btn:
     response = llm_process(lat_curenta, lon_curenta, data_selectata)
     st.session_state.analiza_vizibila = True
+    st.session_state.what_if_response = None
 
 # --- HEADER APLICAȚIE ---
 if spital_selectat:
@@ -145,9 +148,9 @@ if st.session_state.analiza_vizibila:
             time.sleep(1.2) 
     risc = 82 if normalize_text(oras_introdus) in ["constanta", "brasov", "bucuresti"] else 38
 
-    tab_simulator, = st.tabs(["⚠️ Raport de Risc"])
+    tab_simulator, tab_what_if = st.tabs(["⚠️ Raport de Risc", "🔬 What-If Simulator"])
     with tab_simulator:
-        st.markdown("#### Simulator de Criză (What-If)")
+        st.markdown("#### Raport de Risc")
         st.info(response)
 
         
@@ -160,3 +163,24 @@ if st.session_state.analiza_vizibila:
             st.session_state.istoric_chat.append({"rol": "user", "text": scenariu})
             st.session_state.istoric_chat.append({"rol": "assistant", "text": f"**Analiză pentru {spital_selectat}:** Scenariul de tip '{scenariu}' ar ridica riscul UPU la 95%. Recomandăm activarea generatoarelor și a protocolului de triaj manual."})
             st.rerun()
+
+    with tab_what_if:
+        st.markdown("#### Simulator What-If")
+        st.markdown("Adresează orice întrebare sau scenariu ipotetic, iar AI-ul va răspunde pe baza predicțiilor modelului Prophet.")
+
+        prompt_what_if = st.text_area(
+            "Introduceți scenariul sau întrebarea:",
+            placeholder="Ex: Ce se întâmplă dacă mâine ninge abundent? Câți pacienți suplimentari ar putea veni?",
+            height=120,
+            key="prompt_what_if_input"
+        )
+        what_if_btn = st.button("💡 Analizează Scenariul", type="primary", disabled=not prompt_what_if.strip(), key="what_if_btn")
+
+        if what_if_btn and prompt_what_if.strip():
+            with st.spinner("Se analizează scenariul cu modelul Prophet..."):
+                st.session_state.what_if_response = what_if_process(lat_curenta, lon_curenta, data_selectata, prompt_what_if.strip())
+
+        if st.session_state.what_if_response:
+            st.markdown("---")
+            st.markdown("**Răspuns AI bazat pe modelul Prophet:**")
+            st.info(st.session_state.what_if_response)

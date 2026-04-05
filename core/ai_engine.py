@@ -120,6 +120,38 @@ def process_coords(lat, long, start, end, medie):
 
 
 
+def what_if_process(lat, long, date, prompt_utilizator):
+    medie = train()
+
+    param_list = process_coords(lat, long, date, date, medie)
+
+    prompt_pentru_llm = f"""
+    Ești un asistent medical și manager de spital cu experiență.
+    Dispui de predicțiile modelului Prophet pentru ziua de {param_list[0]}, bazate pe date istorice reale.
+
+    PREDICȚIILE MODELULUI PROPHET PENTRU {param_list[0]}:
+    - Variație estimată față de medie: {param_list[4]}%
+    - Temperatură prognozată: {param_list[1]}°C
+    - Precipitații prognozate: {param_list[2]} mm
+    - Viteza vântului prognozată: {param_list[3]} km/h
+
+    ÎNTREBAREA / SCENARIUL UTILIZATORULUI:
+    {prompt_utilizator}
+
+    Răspunde la întrebarea de mai sus ținând cont de predicțiile modelului Prophet prezentate.
+    Oferă un răspuns concret, practic și fundamentat pe datele furnizate.
+    """
+
+    client = genai.Client(api_key=Keys.AI_KEY)
+
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt_pentru_llm
+    )
+
+    return response.text
+
+
 def llm_process(lat, long, date):
     medie = train()
 
