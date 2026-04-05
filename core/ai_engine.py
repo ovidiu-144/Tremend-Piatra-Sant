@@ -120,10 +120,10 @@ def process_coords(lat, long, start, end, medie):
 
 
 
-def llm_setup():
+def llm_process(lat, long, date):
     medie = train()
 
-    param_list = process_coords(45.6427, 25.5887, "2026-04-01", "2026-04-01", medie)
+    param_list = process_coords(lat, long, date, date, medie)
 
     prompt_pentru_llm = f"""
     Ești un asistent medical și manager de spital cu experiență.
@@ -154,4 +154,4 @@ def llm_setup():
     print(response.text)
 
 if __name__ == "__main__":
-    llm_setup()
+    llm_process()
